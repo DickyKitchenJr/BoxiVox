@@ -1,11 +1,11 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
 
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
-
 
 app.use(cors());
 
@@ -15,7 +15,6 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
 
-
 async function start() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) throw new Error("Missing MONGODB_URI in environment");
@@ -23,12 +22,11 @@ async function start() {
   await mongoose.connect(mongoUri);
   console.log("MongoDB connected");
 
-  const port = process.env.PORT || 5000;
+  const port = Number(process.env.PORT) || 5000;
   app.listen(port, "0.0.0.0", () => {
     console.log(`API server running on http://localhost:${port}`);
   });
 }
-
 
 start().catch((err) => {
   console.error(err);
