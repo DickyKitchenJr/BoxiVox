@@ -1,8 +1,10 @@
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-
+import { asyncHandler } from "./utilities/asyncHandler";
+import { errorHandler } from "./utilities/errorHandler";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const app = express();
@@ -14,6 +16,8 @@ app.use(express.json());
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
+
+app.use(errorHandler);
 
 async function start() {
   const mongoUri = process.env.MONGODB_URI;
