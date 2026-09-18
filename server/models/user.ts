@@ -4,6 +4,7 @@ import { Schema, model } from "mongoose";
 export interface IUser {
   name: string;
   password?: string;
+  isAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
 
@@ -19,6 +20,7 @@ const userSchema = new Schema<IUser>(
       trim: true,
     },
     password: { type: String, select: false },
+    isAdmin: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
