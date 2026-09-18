@@ -25,8 +25,10 @@ export const createUser = async (req: Request, res: Response) => {
   }
 
   const user = await User.create(req.body);
+  const userResponse = user.toObject();
+  delete userResponse.password;
 
-  res.status(201).json(user);
+  res.status(201).json(userResponse);
 };
 
 // Read/Get
