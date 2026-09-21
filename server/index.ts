@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import { asyncHandler } from "./utilities/asyncHandler";
 import { errorHandler } from "./utilities/errorHandler";
+import userRouter from "./routes/userRoutes.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -16,6 +17,8 @@ app.use(express.json());
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
+
+app.use("/api/users", userRouter);
 
 app.use(errorHandler);
 
