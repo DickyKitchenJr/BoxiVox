@@ -24,7 +24,11 @@ export const createUser = async (req: Request, res: Response) => {
     throw new Error("Username is already in use");
   }
 
-  const user = await User.create(req.body);
+  const user = await User.create({
+    name,
+    password: req.body?.password,
+    isAdmin: false,
+  });
   const userResponse = user.toObject();
   delete userResponse.password;
 
