@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Instance } from "../models/instance.js";
 import { User } from "../models/user.js";
 
 // Create
@@ -17,6 +18,23 @@ export const createUser = async (req: Request, res: Response) => {
     throw new Error("Name is required");
   }
 
+  const instance = await Instance.findById("primary");
+
+  if (!instance) {
+    res.status(500);
+    throw new Error("Instance is not configured");
+  }
+
+  const password = req.body?.password;
+
+  if (
+    instance.passwordsRequired &&
+    (typeof password !== "string" || !password.trim())
+  ) {
+    res.status(400);
+    throw new Error("Password is required");
+  }
+
   const existingUser = await User.findOne({ name });
 
   if (existingUser) {
@@ -26,7 +44,7 @@ export const createUser = async (req: Request, res: Response) => {
 
   const user = await User.create({
     name,
-    password: req.body?.password,
+    password,
     isAdmin: false,
   });
   const userResponse = user.toObject();
