@@ -25,6 +25,12 @@ const userSchema = new Schema<IUser>(
   { timestamps: true },
 );
 
+userSchema.pre("validate", function () {
+  if (this.isAdmin && (typeof this.password !== "string" || !this.password.trim())) {
+    throw new Error("Admins must have a password");
+  }
+});
+
 userSchema.pre("save", async function () {
   if (!this.isModified("password") || !this.password) {
     return;
