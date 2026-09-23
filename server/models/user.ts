@@ -26,7 +26,10 @@ const userSchema = new Schema<IUser>(
 );
 
 userSchema.pre("validate", function () {
-  if (this.isAdmin && (typeof this.password !== "string" || !this.password.trim())) {
+  if (
+    this.isAdmin &&
+    (typeof this.password !== "string" || !this.password.trim())
+  ) {
     throw new Error("Admins must have a password");
   }
 });
