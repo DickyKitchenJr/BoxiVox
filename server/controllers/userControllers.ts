@@ -4,6 +4,11 @@ import { User } from "../models/user.js";
 
 // Create
 export const createUser = async (req: Request, res: Response) => {
+  if (Object.prototype.hasOwnProperty.call(req.body ?? {}, "isAdmin")) {
+    res.status(400);
+    throw new Error("isAdmin cannot be set when creating a regular user");
+  }
+
   const rawName = req.body?.name;
 
   if (typeof rawName !== "string") {
