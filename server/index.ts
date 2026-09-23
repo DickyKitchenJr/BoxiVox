@@ -4,6 +4,8 @@ import cors from "cors";
 import { asyncHandler } from "./utilities/asyncHandler";
 import { errorHandler } from "./utilities/errorHandler";
 import userRouter from "./routes/userRoutes.js";
+import setupRouter from "./routes/setupRoutes.js";
+import instanceRouter from "./routes/instanceRoutes.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -18,6 +20,8 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true });
 });
 
+app.use("/api/setup", setupRouter);
+app.use("/api/instance", instanceRouter);
 app.use("/api/users", userRouter);
 
 app.use(errorHandler);
