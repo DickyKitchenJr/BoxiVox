@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Instance } from "../models/instance.js";
+import { User } from "../models/user.js";
 
 const PRIMARY_INSTANCE_ID = "primary";
 
@@ -14,9 +15,12 @@ export const getInstance = async (req: Request, res: Response) => {
 };
 
 export const updateInstance = async (req: Request, res: Response) => {
-  const updates = req.body ?? {};
-  const allowedFields = ["passwordsRequired", "allowExternalAccess"];
-  const unknownFields = Object.keys(updates).filter(
+  const requester = req.user!;
+  const body = req.body ?? {};
+  const settingFields = ["passwordsRequired", "allowExternalAccess"];
+  const allowedFields = [...settingFields, "adminPassword"];
+
+  const unknownFields = Object.keys(body).filter(
     (field) => !allowedFields.includes(field),
   );
 
@@ -26,10 +30,25 @@ export const updateInstance = async (req: Request, res: Response) => {
     });
   }
 
-  for (const field of ["passwordsRequired", "allowExternalAccess"]) {
-    if (field in updates && typeof updates[field] !== "boolean") {
+  for (const field of settingFields) {
+    if (field in body && typeof body[field] !== "boolean") {
       return res.status(400).json({ error: `${field} must be a boolean` });
     }
+  }
+
+  const adminPassword = body.adminPassword;
+
+  if (typeof adminPassword !== "string" || !adminPassword.trim()) {
+    return res
+      .status(400)
+      .json({ error: "Admin password confirmation is required" });
+  }
+
+  const admin = await User.findById(requester._id).select("+password");
+  const validAdminPassword = await admin?.comparePassword(adminPassword);
+
+  if (!admin || !validAdminPassword) {
+    return res.status(401).json({ error: "Invalid admin password" });
   }
 
   const instance = await Instance.findById(PRIMARY_INSTANCE_ID);
@@ -39,9 +58,9 @@ export const updateInstance = async (req: Request, res: Response) => {
   }
 
   const passwordsRequired =
-    updates.passwordsRequired ?? instance.passwordsRequired;
+    body.passwordsRequired ?? instance.passwordsRequired;
   const allowExternalAccess =
-    updates.allowExternalAccess ?? instance.allowExternalAccess;
+    body.allowExternalAccess ?? instance.allowExternalAccess;
 
   if (allowExternalAccess && !passwordsRequired) {
     return res.status(400).json({
@@ -49,7 +68,8 @@ export const updateInstance = async (req: Request, res: Response) => {
     });
   }
 
-  Object.assign(instance, updates);
+  instance.passwordsRequired = passwordsRequired;
+  instance.allowExternalAccess = allowExternalAccess;
   await instance.save();
 
   res.status(200).json(instance);

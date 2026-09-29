@@ -77,6 +77,16 @@ export const getSpecificUser = async (req: Request, res: Response) => {
 
 // Update
 export const updateUser = async (req: Request, res: Response) => {
+  const requester = req.user!;
+  const targetId = req.params.id;
+  const isSelf = requester._id.toString() === targetId;
+
+  if (!isSelf && !requester.isAdmin) {
+    return res
+      .status(403)
+      .json({ error: "Not authorized to update this user" });
+  }
+
   const rawName = req.body?.name;
 
   if (typeof rawName !== "string") {
@@ -91,15 +101,52 @@ export const updateUser = async (req: Request, res: Response) => {
     throw new Error("Name is required");
   }
 
+  if (requester.isAdmin) {
+    const adminPassword = req.body?.adminPassword;
+
+    if (typeof adminPassword !== "string" || !adminPassword.trim()) {
+      return res
+        .status(400)
+        .json({ error: "Admin password confirmation is required" });
+    }
+
+    const admin = await User.findById(requester._id).select("+password");
+    const validAdminPassword = await admin?.comparePassword(adminPassword);
+
+    if (!admin || !validAdminPassword) {
+      return res.status(401).json({ error: "Invalid admin password" });
+    }
+  } else {
+    const targetUser = await User.findById(targetId).select("+password");
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (targetUser.password) {
+      const currentPassword = req.body?.currentPassword;
+
+      if (typeof currentPassword !== "string" || !currentPassword.trim()) {
+        return res.status(400).json({ error: "Current password is required" });
+      }
+
+      const validPassword = await targetUser.comparePassword(currentPassword);
+
+      if (!validPassword) {
+        return res.status(401).json({ error: "Invalid current password" });
+      }
+    }
+  }
+
   const existingUser = await User.findOne({ name });
 
-  if (existingUser && existingUser._id.toString() !== req.params.id) {
+  if (existingUser && existingUser._id.toString() !== targetId) {
     res.status(409);
     throw new Error("Username is already in use");
   }
 
   const user = await User.findByIdAndUpdate(
-    req.params.id,
+    targetId,
     { name },
     {
       new: true,
@@ -116,11 +163,36 @@ export const updateUser = async (req: Request, res: Response) => {
 
 // Delete
 export const deleteUser = async (req: Request, res: Response) => {
-  const user = await User.findByIdAndDelete(req.params.id);
+  const requester = req.user!;
 
-  if (!user) {
+  const adminPassword = req.body?.adminPassword;
+
+  if (typeof adminPassword !== "string" || !adminPassword.trim()) {
+    return res
+      .status(400)
+      .json({ error: "Admin password confirmation is required" });
+  }
+
+  const admin = await User.findById(requester._id).select("+password");
+  const validAdminPassword = await admin?.comparePassword(adminPassword);
+
+  if (!admin || !validAdminPassword) {
+    return res.status(401).json({ error: "Invalid admin password" });
+  }
+
+  const targetUser = await User.findById(req.params.id);
+
+  if (!targetUser) {
     return res.status(404).json({ error: "User not found" });
   }
+
+  if (targetUser.isAdmin) {
+    return res
+      .status(400)
+      .json({ error: "Admin accounts cannot be deleted through this route" });
+  }
+
+  await User.findByIdAndDelete(req.params.id);
 
   res.status(200).json({ message: "User deleted successfully" });
 };
