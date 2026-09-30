@@ -162,7 +162,7 @@ export const updateUser = async (req: Request, res: Response) => {
     targetId,
     { name },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   );
