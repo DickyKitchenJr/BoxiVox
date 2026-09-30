@@ -23,12 +23,9 @@ describe("login rate limiter", () => {
 
     await request(app).post("/login").send({ valid: false }).expect(401);
     await request(app).post("/login").send({ valid: false }).expect(401);
-    await request(app)
-      .post("/login")
-      .send({ valid: false })
-      .expect(429, {
-        error: "Too many failed login attempts. Try again in 15 minutes.",
-      });
+    await request(app).post("/login").send({ valid: false }).expect(429, {
+      error: "Too many failed login attempts. Try again in 15 minutes.",
+    });
   });
 
   it("does not count successful requests against the failure limit", async () => {
@@ -37,9 +34,6 @@ describe("login rate limiter", () => {
     await request(app).post("/login").send({ valid: true }).expect(200);
     await request(app).post("/login").send({ valid: false }).expect(401);
     await request(app).post("/login").send({ valid: false }).expect(401);
-    await request(app)
-      .post("/login")
-      .send({ valid: false })
-      .expect(429);
+    await request(app).post("/login").send({ valid: false }).expect(429);
   });
 });
