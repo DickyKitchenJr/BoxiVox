@@ -4,7 +4,8 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "dev": "nodemon --exec tsx index.ts",
     "build": "tsc",
     "start": "node dist/index.js"
@@ -28,8 +29,11 @@
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.19.0",
     "@types/node": "^26.3.0",
+    "@types/supertest": "^7.2.1",
     "nodemon": "^3.1.14",
+    "supertest": "^7.3.0",
     "tsx": "^4.19.2",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   }
 }

@@ -2,14 +2,20 @@ import { rateLimit } from "express-rate-limit";
 
 const fifteenMinutes = 15 * 60 * 1000;
 
-export const loginLimiter = rateLimit({
-  windowMs: fifteenMinutes,
-  limit: 50,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  skipSuccessfulRequests: true,
-  message: { error: "Too many failed login attempts. Try again in 15 minutes." },
-});
+export function createLoginLimiter(limit = 50) {
+  return rateLimit({
+    windowMs: fifteenMinutes,
+    limit,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: {
+      error: "Too many failed login attempts. Try again in 15 minutes.",
+    },
+  });
+}
+
+export const loginLimiter = createLoginLimiter();
 
 export const claimPasswordLimiter = rateLimit({
   windowMs: fifteenMinutes,
