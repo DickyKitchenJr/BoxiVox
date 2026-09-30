@@ -123,7 +123,20 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (targetUser.password) {
+    const instance = await Instance.findById("primary");
+
+    if (!instance) {
+      return res.status(500).json({ error: "Instance is not configured" });
+    }
+
+    if (instance.passwordsRequired && !targetUser.password) {
+      return res.status(409).json({
+        error: "Password setup required",
+        code: "PASSWORD_SETUP_REQUIRED",
+      });
+    }
+
+    if (instance.passwordsRequired) {
       const currentPassword = req.body?.currentPassword;
 
       if (typeof currentPassword !== "string" || !currentPassword.trim()) {
