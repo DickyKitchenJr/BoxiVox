@@ -13,9 +13,13 @@ import {
   passwordConfirmationLimiter,
 } from "../middleware/rateLimiters.js";
 import { asyncHandler } from "../utilities/asyncHandler.js";
+import { generateCsrfToken } from "../middleware/csrfProtection.js";
 
 const authRouter = Router();
 
+authRouter.get("/csrf-token", (req, res) => {
+  res.status(200).json({ token: generateCsrfToken(req) });
+});
 authRouter.post("/login", loginLimiter, asyncHandler(login));
 authRouter.post("/logout", asyncHandler(logout));
 authRouter.get("/me", asyncHandler(getCurrentUser));

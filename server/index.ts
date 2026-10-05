@@ -9,6 +9,10 @@ import userRouter from "./routes/userRoutes.js";
 import setupRouter from "./routes/setupRoutes.js";
 import instanceRouter from "./routes/instanceRoutes.js";
 import authRouter from "./routes/authRoutes.js";
+import {
+  createTrustedOriginProtection,
+  csrfProtection,
+} from "./middleware/csrfProtection.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -55,6 +59,8 @@ app.use(
 );
 
 app.use(express.json());
+app.use(createTrustedOriginProtection(clientOrigin));
+app.use(csrfProtection);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
