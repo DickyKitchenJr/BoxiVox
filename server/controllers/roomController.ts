@@ -53,10 +53,7 @@ export const getRooms = async (req: Request, res: Response) => {
   const filter = requester.isAdmin
     ? {}
     : {
-        $or: [
-          { isPrivate: false },
-          { memberIds: requester._id },
-        ],
+        $or: [{ isPrivate: false }, { memberIds: requester._id }],
       };
   const rooms = await Room.find(filter).sort({ name: 1 });
 
@@ -84,9 +81,7 @@ export const createRoom = async (req: Request, res: Response) => {
   }
 
   if (typeof req.body?.isPrivate !== "boolean") {
-    return res
-      .status(400)
-      .json({ error: "Room privacy must be selected" });
+    return res.status(400).json({ error: "Room privacy must be selected" });
   }
 
   const rules = req.body?.rules ?? [];
@@ -94,14 +89,18 @@ export const createRoom = async (req: Request, res: Response) => {
     !Array.isArray(rules) ||
     rules.some((rule) => typeof rule !== "string" || !allowedRules.has(rule))
   ) {
-    return res.status(400).json({ error: "One or more room rules are invalid" });
+    return res
+      .status(400)
+      .json({ error: "One or more room rules are invalid" });
   }
 
   const name = rawName.trim();
   const normalizedName = normalizeRoomName(name);
   const existingRoom = await Room.findOne({ normalizedName });
   if (existingRoom) {
-    return res.status(409).json({ error: "A room with that name already exists" });
+    return res
+      .status(409)
+      .json({ error: "A room with that name already exists" });
   }
 
   try {
@@ -177,7 +176,9 @@ export const deleteRoom = async (req: Request, res: Response) => {
 
   const requester = req.user!;
   if (!requester.isAdmin && !room.createdBy.equals(requester._id)) {
-    return res.status(403).json({ error: "Not authorized to delete this room" });
+    return res
+      .status(403)
+      .json({ error: "Not authorized to delete this room" });
   }
 
   await Message.deleteMany({ roomID: room._id.toString() });

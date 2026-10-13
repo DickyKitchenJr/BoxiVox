@@ -13,11 +13,7 @@ const roomRouter = Router();
 
 roomRouter.get("/", asyncHandler(requireAuth), asyncHandler(getRooms));
 roomRouter.post("/", asyncHandler(requireAuth), asyncHandler(createRoom));
-roomRouter.get(
-  "/:roomId",
-  asyncHandler(requireAuth),
-  asyncHandler(getRoom),
-);
+roomRouter.get("/:roomId", asyncHandler(requireAuth), asyncHandler(getRoom));
 roomRouter.post(
   "/:roomId/members",
   asyncHandler(requireAuth),

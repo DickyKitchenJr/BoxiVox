@@ -150,7 +150,9 @@ describe("room controller", () => {
       response,
     );
 
-    expect(deleteMessages).toHaveBeenCalledWith({ roomID: room._id.toString() });
+    expect(deleteMessages).toHaveBeenCalledWith({
+      roomID: room._id.toString(),
+    });
     expect(room.deleteOne).toHaveBeenCalledOnce();
     expect(response.status).toHaveBeenCalledWith(200);
   });
