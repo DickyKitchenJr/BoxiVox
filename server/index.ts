@@ -9,6 +9,7 @@ import userRouter from "./routes/userRoutes.js";
 import setupRouter from "./routes/setupRoutes.js";
 import instanceRouter from "./routes/instanceRoutes.js";
 import authRouter from "./routes/authRoutes.js";
+import roomRouter from "./routes/roomRoutes.js";
 import {
   createTrustedOriginProtection,
   csrfProtection,
@@ -69,6 +70,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/setup", setupRouter);
 app.use("/api/instance", instanceRouter);
 app.use("/api/users", userRouter);
+app.use("/api/rooms", roomRouter);
 app.use("/api/auth", authRouter);
 
 app.use(errorHandler);

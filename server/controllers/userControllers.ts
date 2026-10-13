@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Instance } from "../models/instance.js";
 import { User } from "../models/user.js";
+import { Room } from "../models/room.js";
 
 // Create
 export const createUser = async (req: Request, res: Response) => {
@@ -205,6 +206,10 @@ export const deleteUser = async (req: Request, res: Response) => {
       .json({ error: "Admin accounts cannot be deleted through this route" });
   }
 
+  await Room.updateMany(
+    { memberIds: targetUser._id },
+    { $pull: { memberIds: targetUser._id } },
+  );
   await User.findByIdAndDelete(req.params.id);
 
   res.status(200).json({ message: "User deleted successfully" });
