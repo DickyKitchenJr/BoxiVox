@@ -1,5 +1,5 @@
-import { defineConfig, searchForWorkspaceRoot } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig, searchForWorkspaceRoot } from "vite";
+import react from "@vitejs/plugin-react";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -9,4 +9,4 @@ export default defineConfig({
       allow: [searchForWorkspaceRoot(process.cwd())],
     },
   },
-})
+});
