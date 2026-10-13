@@ -23,7 +23,8 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "express-session": "^1.19.0",
-    "mongoose": "^9.8.1"
+    "mongoose": "^9.8.1",
+    "socket.io": "^4.8.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
