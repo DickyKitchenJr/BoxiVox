@@ -1,7 +1,12 @@
 import express from "express";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { createLoginLimiter } from "./rateLimiters.js";
+import {
+  createMessageCreationAllowance,
+  createFailedMessageLimiter,
+  createLoginLimiter,
+  createRoomCreationLimiter,
+} from "./rateLimiters.js";
 
 function createTestApp() {
   const app = express();
@@ -35,5 +40,84 @@ describe("login rate limiter", () => {
     await request(app).post("/login").send({ valid: false }).expect(401);
     await request(app).post("/login").send({ valid: false }).expect(401);
     await request(app).post("/login").send({ valid: false }).expect(429);
+  });
+});
+
+describe("room creation rate limiter", () => {
+  it("limits each authenticated user independently", async () => {
+    const app = express();
+    app.use((req, _res, next) => {
+      const userId = req.header("x-user-id") ?? "missing-user";
+      req.user = { _id: { toString: () => userId } } as never;
+      next();
+    });
+    app.post("/rooms", createRoomCreationLimiter(2), (_req, res) => {
+      res.sendStatus(201);
+    });
+
+    await request(app).post("/rooms").set("x-user-id", "user-a").expect(201);
+    await request(app).post("/rooms").set("x-user-id", "user-a").expect(201);
+    await request(app).post("/rooms").set("x-user-id", "user-a").expect(429);
+    await request(app).post("/rooms").set("x-user-id", "user-b").expect(201);
+  });
+});
+
+describe("message rate limiters", () => {
+  function createMessageApp() {
+    const app = express();
+    const reserveMessageCreation = createMessageCreationAllowance(2);
+    app.use((req, _res, next) => {
+      req.user = { _id: { toString: () => "user-a" } } as never;
+      next();
+    });
+    app.post(
+      "/messages",
+      createFailedMessageLimiter(2),
+      (req, res, next) => {
+        if (req.header("x-rule-rejected")) return next();
+
+        const reservation = reserveMessageCreation(req.user!._id.toString());
+        if (!reservation.allowed) {
+          res.setHeader("Retry-After", reservation.retryAfterSeconds);
+          return res.sendStatus(429);
+        }
+
+        res.on("finish", () => {
+          if (res.statusCode >= 400) reservation.release();
+        });
+        next();
+      },
+      (req, res) => res.sendStatus(req.header("x-rule-rejected") ? 422 : 201),
+    );
+    return app;
+  }
+
+  it("limits successful message sends separately from rejected sends", async () => {
+    const app = createMessageApp();
+
+    await request(app).post("/messages").expect(201);
+    await request(app).post("/messages").expect(201);
+    await request(app)
+      .post("/messages")
+      .set("x-rule-rejected", "true")
+      .expect(422);
+    await request(app).post("/messages").expect(429);
+  });
+
+  it("limits repeated room-rule rejections separately", async () => {
+    const app = createMessageApp();
+
+    await request(app)
+      .post("/messages")
+      .set("x-rule-rejected", "true")
+      .expect(422);
+    await request(app)
+      .post("/messages")
+      .set("x-rule-rejected", "true")
+      .expect(422);
+    await request(app)
+      .post("/messages")
+      .set("x-rule-rejected", "true")
+      .expect(429);
   });
 });

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Instance } from "../models/instance.js";
 import { User } from "../models/user.js";
 import { Room } from "../models/room.js";
+import { disconnectUserSockets } from "../realtime/socketServer.js";
 
 // Create
 export const createUser = async (req: Request, res: Response) => {
@@ -211,6 +212,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     { $pull: { memberIds: targetUser._id } },
   );
   await User.findByIdAndDelete(req.params.id);
+  disconnectUserSockets(targetUser._id.toString());
 
   res.status(200).json({ message: "User deleted successfully" });
 };

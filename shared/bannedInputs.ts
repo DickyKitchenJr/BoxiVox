@@ -117,7 +117,6 @@ export const bannedWords = [
   "coochy",
   "coochies",
   "cooter",
-  "cracker",
   "crackerass",
   "crackerbag",
   "crackerbags",
@@ -404,13 +403,9 @@ export const bannedWords = [
   "poonani",
   "poonany",
   "poonies",
-  "poop",
-  "poophead",
-  "poopheads",
   "poonpussy",
   "poon",
   "pussy",
-  "pussycat",
   "pussylicker",
   "pussylickers",
   "pussylicking",
@@ -567,36 +562,9 @@ export const checkForBannedWords = (input: string): boolean => {
   const lower = input.toLowerCase();
   const words = lower.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
-  // Check 1: exact word match against bannedWords
   for (const word of words) {
     if ((bannedWords as readonly string[]).includes(word)) {
       return true;
-    }
-  }
-
-  // Check 2: check for hidden banned words between repeated characters; for example, "hasshat" contains "ass" between two "h"s in an attempt to hide the banned word but should be caught by the filter
-  for (const word of words) {
-    const positions: Record<string, number[]> = {};
-    for (let i = 0; i < word.length; i++) {
-      const ch = word[i];
-      if (!positions[ch]) positions[ch] = [];
-      positions[ch].push(i);
-    }
-
-    for (const ch in positions) {
-      const pos = positions[ch];
-      if (pos.length < 2) continue;
-
-      for (let a = 0; a < pos.length - 1; a++) {
-        for (let b = a + 1; b < pos.length; b++) {
-          const between = word.slice(pos[a] + 1, pos[b]);
-          for (const banned of bannedWords) {
-            if (between.includes(banned)) {
-              return true;
-            }
-          }
-        }
-      }
     }
   }
 

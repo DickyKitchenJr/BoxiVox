@@ -8,6 +8,12 @@ import {
   RoomRule,
 } from "../models/room.js";
 import { User } from "../models/user.js";
+import { notifyRoomDeleted } from "../realtime/socketServer.js";
+import {
+  canDeleteRoom,
+  canInviteToRoom,
+  canReadRoom,
+} from "../services/roomAccess.js";
 
 const allowedRules = new Set<string>(ROOM_RULES);
 
@@ -37,17 +43,6 @@ function isDuplicateKeyError(error: unknown): boolean {
   );
 }
 
-function canViewRoom(
-  room: InstanceType<typeof Room>,
-  user: NonNullable<Request["user"]>,
-): boolean {
-  return (
-    !room.isPrivate ||
-    user.isAdmin ||
-    room.memberIds.some((memberId) => memberId.equals(user._id))
-  );
-}
-
 export const getRooms = async (req: Request, res: Response) => {
   const requester = req.user!;
   const filter = requester.isAdmin
@@ -67,7 +62,14 @@ export const getRoom = async (req: Request, res: Response) => {
   }
 
   const room = await Room.findById(roomId);
-  if (!room || !canViewRoom(room, req.user!)) {
+  const requester = req.user!;
+  if (
+    !room ||
+    !canReadRoom(room, {
+      id: requester._id.toString(),
+      isAdmin: requester.isAdmin,
+    })
+  ) {
     return res.status(404).json({ error: "Room not found" });
   }
 
@@ -145,7 +147,12 @@ export const inviteRoomMember = async (req: Request, res: Response) => {
       .status(400)
       .json({ error: "Public rooms do not have an invite list" });
   }
-  if (!room.memberIds.some((id) => id.equals(req.user!._id))) {
+  if (
+    !canInviteToRoom(room, {
+      id: req.user!._id.toString(),
+      isAdmin: req.user!.isAdmin,
+    })
+  ) {
     return res.status(403).json({ error: "Room membership required" });
   }
 
@@ -175,7 +182,12 @@ export const deleteRoom = async (req: Request, res: Response) => {
   }
 
   const requester = req.user!;
-  if (!requester.isAdmin && !room.createdBy.equals(requester._id)) {
+  if (
+    !canDeleteRoom(room, {
+      id: requester._id.toString(),
+      isAdmin: requester.isAdmin,
+    })
+  ) {
     return res
       .status(403)
       .json({ error: "Not authorized to delete this room" });
@@ -183,6 +195,7 @@ export const deleteRoom = async (req: Request, res: Response) => {
 
   await Message.deleteMany({ roomID: room._id.toString() });
   await room.deleteOne();
+  notifyRoomDeleted(room._id.toString());
 
   res.status(200).json({ message: "Room deleted successfully" });
 };

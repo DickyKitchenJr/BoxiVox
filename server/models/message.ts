@@ -26,5 +26,6 @@ const messageSchema = new Schema<IMessage>(
 
 // Time-To-Live index
 messageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+messageSchema.index({ roomID: 1, _id: -1 });
 
 export const Message = model<IMessage>("Message", messageSchema);

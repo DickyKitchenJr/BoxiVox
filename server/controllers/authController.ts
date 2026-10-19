@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Instance } from "../models/instance.js";
 import { User } from "../models/user.js";
+import { disconnectSessionSockets } from "../realtime/socketServer.js";
 
 const PRIMARY_INSTANCE_ID = "primary";
 
@@ -68,6 +69,8 @@ export const login = async (req: Request, res: Response) => {
     }
   }
 
+  const oldSessionId = req.sessionID;
+
   // Regenerate the session before assigning identity to prevent session fixation
   await new Promise<void>((resolve, reject) => {
     req.session.regenerate((err) => {
@@ -75,6 +78,7 @@ export const login = async (req: Request, res: Response) => {
       resolve();
     });
   });
+  disconnectSessionSockets(oldSessionId);
 
   req.session.userId = user._id.toString();
 
@@ -82,7 +86,9 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
+  const sessionId = req.sessionID;
   await destroySession(req);
+  disconnectSessionSockets(sessionId);
   res.clearCookie("boxivox.sid");
   res.status(200).json({ message: "Logged out successfully" });
 };

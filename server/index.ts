@@ -1,4 +1,5 @@
 import express from "express";
+import { createServer } from "node:http";
 import mongoose from "mongoose";
 import cors from "cors";
 import session from "express-session";
@@ -10,6 +11,7 @@ import setupRouter from "./routes/setupRoutes.js";
 import instanceRouter from "./routes/instanceRoutes.js";
 import authRouter from "./routes/authRoutes.js";
 import roomRouter from "./routes/roomRoutes.js";
+import { initializeSocketServer } from "./realtime/socketServer.js";
 import {
   createTrustedOriginProtection,
   csrfProtection,
@@ -40,24 +42,23 @@ app.use(
   }),
 );
 
-app.use(
-  session({
-    name: "boxivox.sid",
-    secret: sessionSecret,
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: mongoUri,
-      collectionName: "sessions",
-      ttl: sessionStoreTtlSeconds,
-    }),
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    },
+const sessionMiddleware = session({
+  name: "boxivox.sid",
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: mongoUri,
+    collectionName: "sessions",
+    ttl: sessionStoreTtlSeconds,
   }),
-);
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  },
+});
+app.use(sessionMiddleware);
 
 app.use(express.json());
 app.use(createTrustedOriginProtection(clientOrigin));
@@ -75,12 +76,15 @@ app.use("/api/auth", authRouter);
 
 app.use(errorHandler);
 
+const httpServer = createServer(app);
+initializeSocketServer(httpServer, clientOrigin, sessionMiddleware);
+
 async function start() {
   await mongoose.connect(mongoUri);
   console.log("MongoDB connected");
 
   const port = Number(process.env.PORT) || 5000;
-  app.listen(port, "0.0.0.0", () => {
+  httpServer.listen(port, "0.0.0.0", () => {
     console.log(`API server running on http://localhost:${port}`);
   });
 }
